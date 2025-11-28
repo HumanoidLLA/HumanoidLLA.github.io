@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Commanding Humanoid by Free-form Language: A Large Language Action Model with Unified Motion Vocabulary.">
+  <meta name="keywords" content="Language-conditioned Motion Generation; Humanoid Whole-body Control; cross-embodiment Alignment">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro&display=swap"
+        rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/file_1.svg">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+
+  <style>
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* ===============================
+       Simulation / Real-world cards
+       =============================== */
+
+    .sim-hero {
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 14px 40px rgba(15, 23, 42, 0.16);
+      background: linear-gradient(135deg, #f5f7fb 0%, #edf2ff 50%, #f8fafc 100%);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding-top: 0.4rem;
+    }
+
+    .sim-video-wrapper,
+    .baseline-video-wrapper,
+    .mini-video-wrapper {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #020617;
+    }
+
+    .sim-video-wrapper video,
+    .baseline-video-wrapper video,
+    .mini-video-wrapper video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .container.is-max-desktop > * + * {
+      margin-top: 2.2rem;
+    }
+
+    /* ===============================
+       Mini video cards (confident / zombie / golf / robustness)
+       =============================== */
+
+    .mini-video-card {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 14px;
+      padding: 0.75rem 0.75rem 1rem;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mini-video-caption {
+      margin-top: 0.6rem;
+      font-size: 0.92rem;
+      text-align: center;
+      color: #4b5563;
+    }
+
+    .mini-video-caption b {
+      color: #111827;
+    }
+
+    /* ===============================
+       Baseline comparison blocks
+       =============================== */
+
+    .baseline-block {
+      margin-bottom: 1.75rem;
+      padding: 1.25rem 1.4rem 1.4rem;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #f9fafb 0%, #edf2ff 45%, #f8fafc 100%);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+    }
+
+    .baseline-prompt {
+      text-align: center;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+      margin-bottom: 0.9rem;
+    }
+
+    .baseline-prompt span {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      background: linear-gradient(92deg, #3b82f6, #ef4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .baseline-card {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 14px;
+      padding: 0.6rem 0.6rem 0.9rem;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .baseline-caption {
+      margin-top: 0.55rem;
+      font-size: 0.82rem;
+      text-align: center;
+      color: #4b5563;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .baseline-caption span {
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(249, 250, 251, 0.9);
+      display: inline-block;
+    }
+
+    /* ===============================
+       DARK SCIENTIFIC TIMELINE
+       =============================== */
+
+    .timeline-container {
+      position: relative;
+      width: 100%;
+      margin-top: 0.3rem;
+      margin-bottom: 1.8rem;
+      font-family: "Inter", system-ui, sans-serif;
+    }
+
+    .timeline-line {
+      position: relative;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #111827, #1f2937);
+      border-radius: 999px;
+      box-shadow: 0 0 6px rgba(15, 23, 42, 0.65);
+    }
+
+    .timeline-line::after {
+      content: "";
+      position: absolute;
+      right: -11px;
+      top: -6px;
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 14px solid #111827;
+      filter: drop-shadow(0 0 3px rgba(15, 23, 42, 0.7));
+    }
+
+    .timeline-points {
+      position: relative;
+      width: 100%;
+      height: 0;
+    }
+
+    .timeline-point {
+      position: absolute;
+      top: -10px;
+      transform: translateX(-50%);
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #020617;
+      border: 2px solid #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #e5f4ff;
+      cursor: pointer;
+      transition:
+        transform 0.15s ease,
+        background 0.18s ease,
+        color 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
+      box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+    }
+
+    .timeline-point:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.15);
+    }
+
+    .timeline-point.is-active {
+      background: #38bdf8;
+      border-color: #7dd3fc;
+      color: #020617;
+      box-shadow: 0 0 0 8px rgba(56, 189, 248, 0.22);
+    }
+
+    /* ===== Legend under each timeline ===== */
+
+    .timeline-legend {
+      margin-top: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .timeline-item {
+      border: none;
+      background: transparent;
+      padding: 0.35rem 0.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 10px;
+      transition:
+        background 0.18s ease,
+        box-shadow 0.18s ease,
+        transform 0.1s ease,
+        border-color 0.18s ease;
+      border: 1px solid transparent;
+    }
+
+    .timeline-item:hover {
+      background: rgba(15, 23, 42, 0.035);
+      transform: translateY(-1px);
+    }
+
+    .timeline-item.is-active {
+      background: rgba(15, 23, 42, 0.06);
+      border-color: rgba(15, 23, 42, 0.45);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
+    }
+
+    .timeline-item-index {
+      flex: 0 0 auto;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 2px solid #38bdf8;
+      color: #0f172a;
+      background: #e0f2fe;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .timeline-item.is-active .timeline-item-index {
+      background: #0f172a;
+      color: #e5f4ff;
+      border-color: #38bdf8;
+    }
+
+    .timeline-item-text {
+      flex: 1;
+      font-size: 1.02rem;
+      color: #020617;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+      .timeline-item-text {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ===============================
+     Title / authors
+     =============================== -->
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">
+            Commanding Humanoid by Free-form Language:<br>
+            A Large Language Action Model with Unified Motion Vocabulary
+          </h1>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><a>Zhirui Liu</a><sup>1,2,*</sup>,</span>
+            <span class="author-block"><a>Kaiyang Ji</a><sup>1,2,*</sup>,</span>
+            <span class="author-block"><a>Ke Yang</a><sup>1,2</sup>,</span>
+            <span class="author-block"><a>Jingyi Yu</a><sup>1</sup>,</span>
+            <span class="author-block"><a href="https://shiye21.github.io/">Ye Shi</a><sup>1,2</sup>,</span>
+            <span class="author-block"><a href="https://faculty.sist.shanghaitech.edu.cn/faculty/wangjingya/">Jingya Wang</a><sup>1,2,†</sup></span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>ShanghaiTech University</span>
+            <span class="author-block"><sup>2</sup>InstAdapt</span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>*</sup>Equal contribution</span>
+            <span class="author-block"><sup>†</sup>Corresponding author</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="https://humanoidlla.github.io/" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://humanoidlla.github.io/" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="ai ai-arxiv"></i></span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://humanoidlla.github.io/" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-youtube"></i>
+                  </span>
+                  <span>Video (coming soon)</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://humanoidlla.github.io/" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code (coming soon)</span>
+                </a>
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===============================
+     Abstract
+     =============================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Enabling humanoid robots to follow free-form language commands is critical for seamless human-robot interaction, collaborative task execution, and general-purpose embodied intelligence. While recent advances have improved low-level humanoid locomotion and robot manipulation, language-conditioned whole-body control remains a significant challenge. Existing methods are often limited to simple instructions and sacrifice either motion diversity or physical plausibility. To address this, we introduce Humanoid-LLA, a Large Language Action Model that maps expressive language commands to physically executable whole-body actions for humanoid robots. Our approach integrates three core components: a unified motion vocabulary that aligns human and humanoid motion primitives into a shared discrete space; a vocabulary-directed controller distilled from a privileged policy to ensure physical feasibility; and a physics-informed fine-tuning stage using reinforcement learning with dynamics-aware rewards to enhance robustness and stability. Extensive evaluations in simulation and on a real-world Unitree G1 humanoid show that Humanoid-LLA delivers strong language generalization while maintaining high physical fidelity, outperforming existing language-conditioned controllers in motion naturalness, stability, and execution success rate.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Video</h2>
+      </div>
+    </div> -->
+
+  </div>
+</section>
+
+<!-- ===============================
+     Overview figure
+     =============================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3">Overview</h2>
+
+        <figure class="image" style="margin-bottom: 30px;">
+          <img src="./static/images/pipeline_01.png" class="image-size">
+        </figure>
+
+        <h2 class="subtitle" style="text-align: left; font-size: 17px;">
+          Figure 1. An overview of <b><span style="color: purple;">Humanoid-LLA</span></b>. In stage one, we build a <b><span style="color:#6BAEF2;">unified motion vocabulary</span></b> leveraging a large-scale paired human and humanoid motion dataset. With a kinematic humanoid motion goal and its corresponding vocab retrieval, we distill a <b><span style="color:#006D6F;">vocab-directed humanoid student controller</span></b> from a teacher tracking controller. The first two stages enable stage three to acquire various humanoid feedback directly from physical simulation without decoding, making our LLA enhanced with high physical fidelity and language generalization.
+        </h2>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===============================
+     Simulation Results
+     =============================== -->
+<!-- <div class="container is-max-desktop">
+  <h2 class="title is-3 border-b-1px mb-4">Simulation Results</h2>
+
+  <section class="hero sim-hero">
+    <div class="hero-body">
+      <div class="columns is-centered">
+        <div class="column is-12">
+
+          <div class="timeline-container" data-video="sim-video">
+            <div class="timeline-line"></div>
+            <div class="timeline-points">
+              <button class="timeline-point is-active" data-id="1" data-start="0">1</button>
+              <button class="timeline-point" data-id="2" data-start="16">2</button>
+              <button class="timeline-point" data-id="3" data-start="31">3</button>
+              <button class="timeline-point" data-id="4" data-start="44">4</button>
+            </div>
+
+            <div class="timeline-legend">
+              <button class="timeline-item is-active" data-id="1">
+                <span class="timeline-item-index">1</span>
+                <span class="timeline-item-text">Walk in a circle and raise one arm.</span>
+              </button>
+              <button class="timeline-item" data-id="2">
+                <span class="timeline-item-index">2</span>
+                <span class="timeline-item-text">Walk like a chicken.</span>
+              </button>
+              <button class="timeline-item" data-id="3">
+                <span class="timeline-item-index">3</span>
+                <span class="timeline-item-text">Walk carefully and try to keep balance.</span>
+              </button>
+              <button class="timeline-item" data-id="4">
+                <span class="timeline-item-index">4</span>
+                <span class="timeline-item-text">Perform Latin dance.</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="sim-video-wrapper">
+            <video id="sim-video"
+                   controls
+                   muted
+                   playsinline
+                   preload="metadata"
+                   loading="lazy">
+              <source src="./static/videos/simulation.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <br>
+</div> -->
+
+<!-- ===============================
+     Real-World Results
+     =============================== -->
+<div class="container is-max-desktop">
+  <h2 class="title is-3 border-b-1px mb-4">Real-World Results</h2>
+
+  <!-- seq_1.mp4 -->
+  <section class="hero sim-hero">
+    <div class="hero-body">
+      <div class="columns is-centered">
+        <div class="column is-12">
+
+          <div class="timeline-container" data-video="real-video">
+            <div class="timeline-line"></div>
+            <div class="timeline-points">
+              <button class="timeline-point is-active" data-id="1" data-start="4">1</button>
+              <button class="timeline-point" data-id="2" data-start="14">2</button>
+              <button class="timeline-point" data-id="3" data-start="30">3</button>
+              <button class="timeline-point" data-id="4" data-start="48">4</button>
+              <button class="timeline-point" data-id="5" data-start="58">5</button>
+              <button class="timeline-point" data-id="6" data-start="70">6</button>
+            </div>
+
+            <div class="timeline-legend">
+              <button class="timeline-item is-active" data-id="1">
+                <span class="timeline-item-index">1</span>
+                <span class="timeline-item-text">Wave to the audience.</span>
+              </button>
+              <button class="timeline-item" data-id="2">
+                <span class="timeline-item-index">2</span>
+                <span class="timeline-item-text">A basketball player warms up before a match.</span>
+              </button>
+              <button class="timeline-item" data-id="3">
+                <span class="timeline-item-index">3</span>
+                <span class="timeline-item-text">A conductor leads an orchestra with sweeping, passionate arm movements.</span>
+              </button>
+              <button class="timeline-item" data-id="4">
+                <span class="timeline-item-index">4</span>
+                <span class="timeline-item-text">Clap hands to approve.</span>
+              </button>
+              <button class="timeline-item" data-id="5">
+                <span class="timeline-item-index">5</span>
+                <span class="timeline-item-text">Throw a baseball.</span>
+              </button>
+              <button class="timeline-item" data-id="6">
+                <span class="timeline-item-index">6</span>
+                <span class="timeline-item-text">Make a deep bow.</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="sim-video-wrapper">
+            <video id="real-video"
+                   controls
+                   muted
+                   playsinline
+                   preload="metadata"
+                   loading="lazy">
+              <source src="./static/videos/seq_1.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- seq_2.mp4 -->
+  <section class="hero sim-hero">
+    <div class="hero-body">
+      <div class="columns is-centered">
+        <div class="column is-12">
+
+          <div class="timeline-container" data-video="real-video-2">
+            <div class="timeline-line"></div>
+            <div class="timeline-points">
+              <button class="timeline-point is-active" data-id="1" data-start="1">1</button>
+              <button class="timeline-point" data-id="2" data-start="15">2</button>
+              <button class="timeline-point" data-id="3" data-start="26">3</button>
+            </div>
+
+            <div class="timeline-legend">
+              <button class="timeline-item is-active" data-id="1">
+                <span class="timeline-item-index">1</span>
+                <span class="timeline-item-text">Raise arms and squat four times.</span>
+              </button>
+              <button class="timeline-item" data-id="2">
+                <span class="timeline-item-index">2</span>
+                <span class="timeline-item-text">Kick forward forcefully.</span>
+              </button>
+              <button class="timeline-item" data-id="3">
+                <span class="timeline-item-index">3</span>
+                <span class="timeline-item-text">A boxer punches forward continuously.</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="sim-video-wrapper">
+            <video id="real-video-2"
+                   controls
+                   muted
+                   playsinline
+                   preload="metadata"
+                   loading="lazy">
+              <source src="./static/videos/seq_2.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- three single-action clips, no timeline -->
+  <div class="columns is-variable is-4">
+    <div class="column">
+      <div class="mini-video-card">
+        <div class="mini-video-wrapper">
+          <video src="./static/videos/confident.mp4"
+                 muted
+                 controls
+                 playsinline
+                 preload="metadata"
+                 loading="lazy"></video>
+        </div>
+        <p class="mini-video-caption">
+          <b>Walk with a confident and happy strut.</b>
+        </p>
+      </div>
+    </div>
+
+    <div class="column">
+      <div class="mini-video-card">
+        <div class="mini-video-wrapper">
+          <video src="./static/videos/zombie.mp4"
+                 muted
+                 controls
+                 playsinline
+                 preload="metadata"
+                 loading="lazy"></video>
+        </div>
+        <p class="mini-video-caption">
+          <b>A zombie is coming.</b>
+        </p>
+      </div>
+    </div>
+
+    <div class="column">
+      <div class="mini-video-card">
+        <div class="mini-video-wrapper">
+          <video src="./static/videos/golf.mp4"
+                 muted
+                 controls
+                 playsinline
+                 preload="metadata"
+                 loading="lazy"></video>
+        </div>
+        <p class="mini-video-caption">
+          <b>A person is playing golf.</b>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <br>
+</div>
+
+<!-- ===============================
+     Comparison with Baseline
+     =============================== -->
+<div class="container is-max-desktop">
+  <h2 class="title is-3 border-b-1px mb-4">Comparison with Baseline</h2>
+
+  <!-- Row 1: Police -->
+  <div class="baseline-block">
+    <p class="baseline-prompt">
+      Prompt
+      <span>Direct traffic like a policeman.</span>
+    </p>
+
+    <div class="columns is-variable is-4">
+      <div class="column">
+        <div class="baseline-card">
+          <div class="baseline-video-wrapper">
+            <video src="./static/videos/langwbc_police.mp4"
+                   muted controls playsinline preload="metadata" loading="lazy"></video>
+          </div>
+          <p class="baseline-caption"><span>LangWBC</span></p>
+        </div>
+      </div>
+
+      <div class="column">
+        <div class="baseline-card">
+          <div class="baseline-video-wrapper">
+            <video src="./static/videos/ours_police.mp4"
+                   muted controls playsinline preload="metadata" loading="lazy"></video>
+          </div>
+          <p class="baseline-caption"><span>Ours</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Dance -->
+  <div class="baseline-block">
+    <p class="baseline-prompt">
+      Prompt
+      <span>A joyful dance with beated hip-hop.</span>
+    </p>
+
+    <div class="columns is-variable is-4">
+      <div class="column">
+        <div class="baseline-card">
+          <div class="baseline-video-wrapper">
+            <video src="./static/videos/langwbc_dance.mp4"
+                   muted controls playsinline preload="metadata" loading="lazy"></video>
+          </div>
+          <p class="baseline-caption"><span>LangWBC</span></p>
+        </div>
+      </div>
+
+      <div class="column">
+        <div class="baseline-card">
+          <div class="baseline-video-wrapper">
+            <video src="./static/videos/ours_dance.mp4"
+                   muted controls playsinline preload="metadata" loading="lazy"></video>
+          </div>
+          <p class="baseline-caption"><span>Ours</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===============================
+     Robustness Test
+     =============================== -->
+<div class="container is-max-desktop">
+  <h2 class="title is-3 border-b-1px mb-4">Robustness Test</h2>
+
+  <div class="columns is-variable is-4">
+    <div class="column">
+      <div class="mini-video-card">
+        <div class="mini-video-wrapper">
+          <video src="./static/videos/robu_1.mp4"
+                 muted controls playsinline preload="metadata" loading="lazy"></video>
+        </div>
+        <p class="mini-video-caption">
+          <b>A teacher is giving a lecture.</b>
+        </p>
+      </div>
+    </div>
+
+    <div class="column">
+      <div class="mini-video-card">
+        <div class="mini-video-wrapper">
+          <video src="./static/videos/robu_2.mp4"
+                 muted controls playsinline preload="metadata" loading="lazy"></video>
+        </div>
+        <p class="mini-video-caption">
+          <b>A gardener is watering flowers.</b>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <br>
+</div>
+
+<!-- ===============================
+     Citation
+     =============================== -->
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">Citation</h2>
+    <div style="position: relative;">
+      <pre><code id="bibtex-code">Coming soon~
+</code></pre>
+      <button onclick="copyToClipboard()" style="position: absolute; top: 5px; right: 5px; background: none; border: none; cursor: pointer;">
+        <i class="fa fa-paste" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="columns is-centered">
+    <div class="content">
+      <p>
+        This website is borrowed from <a href="https://github.com/nerfies/nerfies.github.io">nerfies</a>.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<!-- ===============================
+     JS: timelines + autoplay
+     =============================== -->
+<script>
+  // 统一为一个 timeline 容器做初始化
+  function setupTimeline(container) {
+    const videoId = container.dataset.video;
+    const video = document.getElementById(videoId);
+    if (!video) return;
+
+    const points = Array.from(container.querySelectorAll('.timeline-point'));
+    const items  = Array.from(container.querySelectorAll('.timeline-item'));
+
+    function setActive(id, seek) {
+      points.forEach(p => p.classList.toggle('is-active', p.dataset.id === id));
+      items.forEach(it => it.classList.toggle('is-active', it.dataset.id === id));
+
+      if (seek) {
+        const pt = points.find(p => p.dataset.id === id);
+        if (pt) {
+          const t = parseFloat(pt.dataset.start) || 0;
+          try {
+            video.currentTime = t;
+            video.play().catch(() => {});
+          } catch (e) {
+            console.warn('Failed to seek video', e);
+          }
+        }
+      }
+    }
+
+    // 根据时间比例自动布局
+    function layoutPoints() {
+      const duration = video.duration || 1;
+      points.forEach(pt => {
+        const t = parseFloat(pt.dataset.start) || 0;
+        const ratio = Math.min(Math.max(t / duration, 0), 1);
+        pt.style.left = (ratio * 100) + '%';
+      });
+    }
+
+    // 绑定点击事件：圆点
+    points.forEach(pt => {
+      pt.addEventListener('click', () => setActive(pt.dataset.id, true));
+    });
+
+    // 绑定点击事件：下方行
+    items.forEach(it => {
+      it.addEventListener('click', () => setActive(it.dataset.id, true));
+    });
+
+    // 初始 active id（如果有）
+    const defaultActive = (points.find(p => p.classList.contains('is-active')) || points[0]);
+    if (defaultActive) {
+      setActive(defaultActive.dataset.id, false);
+    }
+
+    // 视频元数据加载后再布局
+    if (video.readyState >= 1) {
+      layoutPoints();
+    } else {
+      video.addEventListener('loadedmetadata', layoutPoints);
+    }
+  }
+
+  // 所有视频自动播放 + 循环
+  function enableAllAutoplayLoop() {
+    document.querySelectorAll('video').forEach(v => {
+      v.muted = true;
+      v.autoplay = true;
+      v.playsInline = true;
+
+      const tryPlay = () => v.play().catch(() => {});
+      tryPlay();
+
+      v.addEventListener('ended', () => {
+        v.currentTime = 0;
+        tryPlay();
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.timeline-container').forEach(setupTimeline);
+    enableAllAutoplayLoop();
+  });
+</script>
+
+</body>
+</html>
